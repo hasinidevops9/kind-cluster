@@ -12,8 +12,8 @@ variable "aws_region" {
 
 variable "instance_type" {
   type        = string
-  description = "4 vCPU and 16 GiB x86_64 instance."
-  default     = "t3.xlarge"
+  description = "Kind EC2 instance type. m7i-flex.large is 2 vCPU and 8 GiB."
+  default     = "m7i-flex.large"
 }
 
 variable "root_volume_gb" {
