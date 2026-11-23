@@ -14,10 +14,25 @@ data "aws_subnets" "default" {
     values = [data.aws_vpc.default.id]
   }
 
+  # us-east-1f returned Server.InsufficientInstanceCapacity for this Spot type.
+  # Use the default subnet in us-east-1c instead of the first default subnet.
+  filter {
+    name   = "availability-zone"
+    values = ["${var.aws_region}c"]
+  }
+
   filter {
     name   = "default-for-az"
     values = ["true"]
   }
+}
+
+data "aws_subnet" "selected" {
+  id = local.subnet_id
+}
+
+data "aws_route_table" "selected" {
+  subnet_id = local.subnet_id
 }
 
 # Course RHEL 9 image. The name filter is exact, so this stays on
@@ -43,8 +58,12 @@ data "aws_ami" "rhel" {
 }
 
 locals {
-  subnet_id   = sort(data.aws_subnets.default.ids)[0]
+  subnet_id   = one(data.aws_subnets.default.ids)
   script_path = "/home/${var.ssh_user}/bootstrap.sh"
+  igw_route = anytrue([
+    for route in data.aws_route_table.selected.routes :
+    route.cidr_block == "0.0.0.0/0" && try(startswith(route.gateway_id, "igw-"), false)
+  ])
 }
 
 resource "aws_security_group" "kind" {
@@ -104,8 +123,28 @@ resource "aws_instance" "kind" {
 
   lifecycle {
     precondition {
-      condition     = local.subnet_id != ""
-      error_message = "subnet_id is undefined. The default VPC needs a default subnet in ${var.aws_region}."
+      condition     = local.subnet_id != "" && local.subnet_id != null
+      error_message = "subnet_id is undefined. The default VPC needs a default subnet in ${var.aws_region}c."
+    }
+
+    precondition {
+      condition     = data.aws_subnet.selected.vpc_id == aws_security_group.kind.vpc_id
+      error_message = "The selected subnet is not in the same VPC as the Kind security group."
+    }
+
+    precondition {
+      condition     = data.aws_subnet.selected.availability_zone == "${var.aws_region}c"
+      error_message = "The selected subnet is not in ${var.aws_region}c."
+    }
+
+    precondition {
+      condition     = data.aws_subnet.selected.map_public_ip_on_launch
+      error_message = "The ${var.aws_region}c default subnet does not assign public IPv4 addresses, so SSH would not be reachable."
+    }
+
+    precondition {
+      condition     = local.igw_route
+      error_message = "The selected subnet route table has no 0.0.0.0/0 route to an Internet Gateway."
     }
   }
 }

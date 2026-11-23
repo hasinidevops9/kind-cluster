@@ -62,7 +62,7 @@ variable "ssh_password" {
 variable "ssh_ingress_cidr" {
   type        = string
   description = "CIDR allowed to open SSH. The lab workstation public address is the default."
-  default     = "34.229.81.143/32"
+  default     = "34.227.194.160/32"
 
   validation {
     condition     = can(cidrhost(var.ssh_ingress_cidr, 0))
