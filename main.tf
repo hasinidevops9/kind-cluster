@@ -2,9 +2,9 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Networking comes from the default VPC. Spot capacity for this instance type
-# failed in us-east-1f and us-east-1c, so the subnet is chosen from the default
-# subnets in the AZs AWS suggested.
+# Networking comes from the default VPC. Prefer the default subnet in
+# us-east-1c, where the workstation runs and CloudTrail previously showed
+# capacity, then the other suggested AZs.
 data "aws_vpc" "default" {
   default = true
 }
@@ -84,10 +84,10 @@ data "aws_ami" "rhel" {
 
 locals {
   preferred_azs = [
+    "${var.aws_region}c",
     "${var.aws_region}a",
     "${var.aws_region}b",
     "${var.aws_region}d",
-    "${var.aws_region}f",
   ]
 
   script_path = "/home/${var.ssh_user}/bootstrap.sh"

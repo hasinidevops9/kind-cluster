@@ -606,7 +606,6 @@ phase1() {
   dnf install -y cloud-utils-growpart lvm2 xfsprogs e2fsprogs
   expand_storage
   assert_disk_space 8 "Docker installation"
-  dnf update -y
   configure_os_for_kind
   install_docker
   schedule_reboot
