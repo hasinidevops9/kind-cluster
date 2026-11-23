@@ -31,8 +31,15 @@ data "aws_subnet" "selected" {
   id = local.subnet_id
 }
 
+# A default subnet uses the VPC main route table through the implicit
+# association, so a subnet_id lookup returns no results.
 data "aws_route_table" "selected" {
-  subnet_id = local.subnet_id
+  vpc_id = data.aws_subnet.selected.vpc_id
+
+  filter {
+    name   = "association.main"
+    values = ["true"]
+  }
 }
 
 # Course RHEL 9 image. The name filter is exact, so this stays on
