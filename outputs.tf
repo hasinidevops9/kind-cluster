@@ -13,11 +13,6 @@ output "instance_id" {
   value       = aws_instance.kind.id
 }
 
-output "spot_instance_request_id" {
-  description = "Spot request that launched the instance."
-  value       = aws_instance.kind.spot_instance_request_id
-}
-
 output "ami_id" {
   description = "RHEL practice AMI ID."
   value       = aws_instance.kind.ami

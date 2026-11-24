@@ -2,8 +2,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Networking comes from the default VPC. CloudTrail showed insufficient
-# m7i-flex.large Spot capacity in us-east-1c, so prefer the default subnets
+# Networking comes from the default VPC. Prefer the default subnets
 # in us-east-1a, us-east-1b, us-east-1d, and us-east-1f, in that order.
 data "aws_vpc" "default" {
   default = true
@@ -172,18 +171,6 @@ resource "aws_instance" "kind" {
   vpc_security_group_ids      = [aws_security_group.kind.id]
   associate_public_ip_address = true
 
-  # One-time Spot request for a temporary lab. Interruption terminates the
-  # instance instead of stopping it. No max price is set, so the ceiling is
-  # the On-Demand price and the request can still be fulfilled.
-  instance_market_options {
-    market_type = "spot"
-
-    spot_options {
-      spot_instance_type             = "one-time"
-      instance_interruption_behavior = "terminate"
-    }
-  }
-
   root_block_device {
     volume_size           = var.root_volume_gb
     volume_type           = "gp3"
@@ -223,7 +210,7 @@ resource "aws_instance" "kind" {
 }
 
 # Provisioners on the instance run once and a failure taints the instance.
-# A null_resource can be replaced without destroying the Spot instance.
+# A null_resource can be replaced without destroying the instance.
 # The four provisioners below stay as sibling blocks and run in this order:
 # upload the script, run phase1, sleep 60, then run phase2.
 # Phase2 keeps a 15 minute SSH timeout so it can reconnect after the reboot.
